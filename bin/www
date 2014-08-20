@@ -1,9 +1,64 @@
 #!/usr/bin/env node
 var debug = require('debug')('setsudenkun2');
 var app = require('../app');
+var SECRET = "9D97EF29-CDDD-4081-B3E3-E9AE8D63930D";
+var SID_KEY = 'connect.sid';
 
 app.set('port', process.env.PORT || 3000);
 
 var server = app.listen(app.get('port'), function() {
   debug('Express server listening on port ' + server.address().port);
+});
+
+var mongodb = require('mongodb');
+var Server = mongodb.Server;
+var Db = mongodb.Db;
+var MongoServer = mongodb.Server;
+var MongoClient = mongodb.MongoClient;
+
+var db = new Db('setudankun', new Server('localhost', 27017), {safe: false});
+db.open(function (err, db) {
+    if (err) debug(err);
+    var collection = db.collection('icons');
+    var cursor = collection.find();
+    cursor.nextObject(function (err, item) {
+        debug('hoge...');
+        debug('uid: ' + item.uid);
+        debug('roomId: ' + item.roomId);
+        debug('x: ' + item.x);
+        debug('y: ' + item.y);
+    });
+});
+
+var Session = require('express-session').Session;
+var io = require('socket.io')(server);
+io.on('connection', function (socket) {
+    var cookie = require('cookie').parse(socket.request.headers.cookie);
+    cookie = require('cookie-parser/lib/parse').signedCookies(cookie, SECRET);
+    var sessId = socket.sessionId = cookie[SID_KEY];
+    app.sessionStore.get(sessId, function (err, sessionData) {
+        if (!err) {
+            socket.session = new Session({sessionID: sessId, sessionStore: app.sessionStore}, sessionData);
+            console.log("in connection handler session content...");
+            console.log(socket.session);
+        }
+        socket.emit('hello', {uid: sessId, roomId: socket.session.roomId});
+        db.open(function (err, db) {
+            var collection = db.collection('icons');
+            collection.find().toArray(function (err, array) {
+                debug('in mongodb find...')
+                debug(array.length);
+            });
+        });
+    });
+
+    socket.on('set icon', function (data) {
+        console.log('receive: set icon...');
+        console.log(data);
+        db.open(function (err, db) {
+            var collection = db.collection('icons');
+            data._id = data.uid;
+            collection.save(data);
+        });
+    });
 });
