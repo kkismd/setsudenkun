@@ -6,7 +6,7 @@ router.get('/:id', function(req, res) {
     var id = req.params.id;
     req.session.roomId = id;
     console.log( req.session);
-    res.render('rooms', { id: id, counter: c });
+    res.render('rooms', { id: id, counter: c, url: "/images/floor1.png" });
 });
 
 module.exports = router;
