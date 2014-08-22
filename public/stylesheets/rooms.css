@@ -1,8 +1,9 @@
-#main {
-    position: relative;
+.proto {
+    display: none;
+}
+div#main {
+    position: absolute;
     width: 600px;
-    left: 50%;
-    margin-left: -300px;
     border: solid 1px black;
 }
 img.gui {
@@ -19,12 +20,14 @@ img#hot {
     top: 40px;
     left: 50%;
     margin-left: -98px;
+    cursor: pointer;
 }
 
 img#cold {
     top: 40px;
     left: 50%;
     margin-left: -20px;
+    cursor: pointer;
 }
 
 img#floor {

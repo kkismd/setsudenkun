@@ -10,10 +10,9 @@ block content
     p#btn Welcome to Room #{id}
     p= counter
     div#main
+        img#shot.gui.proto(src="/images/SmallHot.png", width="31px", height="31px")
+        img#scold.gui.proto(src="/images/SmallCold.png", width="31px", height="31px")
         img#box.gui(src="/images/IconBox.png", width="157px", height="103px")
         img#hot.gui(src="/images/HotIcon.png", width="70px", height="70px")
         img#cold.gui(src="/images/ColdIcon.png", width="70px", height="70px")
         img#floor.gui(src="#{url}", width="600px")
-    div#hide
-        img#shot.gui(src="/images/SmallHot.png", width="31px", height="31px")
-        img#scold.gui(src="/images/SmallCold.png", width="31px", height="31px")

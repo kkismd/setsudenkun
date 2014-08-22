@@ -4,7 +4,7 @@ var app = require('../app');
 var SECRET = "9D97EF29-CDDD-4081-B3E3-E9AE8D63930D";
 var SID_KEY = 'connect.sid';
 
-app.set('port', process.env.PORT || 3000);
+app.set('port', process.env.PORT || 8080);
 
 var server = app.listen(app.get('port'), function() {
   debug('Express server listening on port ' + server.address().port);
@@ -13,8 +13,6 @@ var server = app.listen(app.get('port'), function() {
 var mongodb = require('mongodb');
 var Server = mongodb.Server;
 var Db = mongodb.Db;
-var MongoServer = mongodb.Server;
-var MongoClient = mongodb.MongoClient;
 
 var db = new Db('setudankun', new Server('localhost', 27017), {safe: false});
 db.open(function (err, db) {
@@ -22,12 +20,18 @@ db.open(function (err, db) {
     var collection = db.collection('icons');
     var cursor = collection.find();
     cursor.nextObject(function (err, item) {
-        debug('hoge...');
-        debug('uid: ' + item.uid);
-        debug('roomId: ' + item.roomId);
-        debug('x: ' + item.x);
-        debug('y: ' + item.y);
+        if (!err) {
+            debug('hoge...');
+            debug(item);
+            debug('uid: ' + item.uid);
+            debug('roomId: ' + item.roomId);
+            debug('x: ' + item.x);
+            debug('y: ' + item.y);
+        } else {
+            debug(err);
+        }
     });
+    db.close();
 });
 
 var Session = require('express-session').Session;
@@ -41,24 +45,40 @@ io.on('connection', function (socket) {
             socket.session = new Session({sessionID: sessId, sessionStore: app.sessionStore}, sessionData);
             console.log("in connection handler session content...");
             console.log(socket.session);
+        } else {
+            debug(err);
         }
         socket.emit('hello', {uid: sessId, roomId: socket.session.roomId});
-        db.open(function (err, db) {
-            var collection = db.collection('icons');
+        debug('socket hello emitted...');
+        db.open(function (err, db1) {
+            debug('db opened...');
+            if (err) { return debug("open error: " + err); }
+            var collection = db1.collection('icons');
             collection.find().toArray(function (err, array) {
-                debug('in mongodb find...')
-                debug(array.length);
+                if (!err) {
+                    debug('in mongodb find...')
+                    debug(array.length);
+                } else {
+                    debug(err);
+                }
             });
+            db1.close();
         });
     });
 
     socket.on('set icon', function (data) {
         console.log('receive: set icon...');
         console.log(data);
-        db.open(function (err, db) {
+
+        data._id = data.uid;
+        db.open(function (err, db1) {
             var collection = db.collection('icons');
-            data._id = data.uid;
-            collection.save(data);
+            collection.save(data, function (err, result) {
+                if (err) {
+                    debug(err);
+                }
+            });
+            db.close();
         });
     });
 });
