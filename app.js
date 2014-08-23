@@ -14,21 +14,20 @@ var app = express();
 app.sessionStore = new MongoStore({
         db: 'sessions',
         host: 'localhost'
+}, function (e) {
+    console.log()
+    app.use(session({
+        secret: "9D97EF29-CDDD-4081-B3E3-E9AE8D63930D",
+        store: app.sessionStore,
+        resave: true,
+        saveUninitialized: true
+    }));
 });
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
-app.use(session({
-    secret: "9D97EF29-CDDD-4081-B3E3-E9AE8D63930D",
-    store: new MongoStore({
-        db: 'sessions',
-        host: 'localhost'
-    }),
-    resave: true,
-    saveUninitialized: true
-}));
 app.use(favicon());
 app.use(logger('dev'));
 app.use(bodyParser.json());

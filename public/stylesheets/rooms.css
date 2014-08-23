@@ -12,21 +12,18 @@ img.gui {
 }
 img#box {
     top: 10px;
-    left: 50%;
-    margin-left: -103px;
+    left: 210px;
 }
 
 img#hot {
     top: 40px;
-    left: 50%;
-    margin-left: -98px;
+    left: 214px;
     cursor: pointer;
 }
 
 img#cold {
     top: 40px;
-    left: 50%;
-    margin-left: -20px;
+    left: 293px;
     cursor: pointer;
 }
 

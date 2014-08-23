@@ -1,37 +1,32 @@
 $(function () {
-    var uid, roomId;
+    var $main = $('#main');
+    var $shot = $('#shot');
+    var $scold = $('#scold');
+    var iconImg = { hot: $shot, cold: $scold };
+    var uid, roomId, members;
     var socket = io();
     socket.on('hello', function (data) {
         uid = data.uid;
         roomId = data.roomId;
-        console.log("uid: " + uid + ", roomId: " + roomId);
+        members = data.members;
+        console.log("uid: " + uid + ", roomId: " + roomId + ", members: " + members);
+        // 他ユーザーのアイコンを配置
+        members.forEach(function (i) {
+            console.log('x: ' + i.x + ' y:' + i.y);
+            if (i.uid && i.x && i.y && i.icon) {
+                var img = iconImg[i.icon].clone(true).removeClass('proto').attr('id', i.uid);
+                $main.append(img);
+                var pos = {top: i.y, left: i.x}
+                img.css(adjustSmallIconCenter(pos));
+            }
+        });
     });
-    socket.on('members', function (data) {
-        uid = data.uid;
-        roomId = data.roomId;
-        console.log('uid: ' + data.uid);
-        console.log('members: ' + data.gTmembers);
-    });
-    (function () {
-        var $main = $('#main');
-        var $shot = $('#shot');
-        var $scold = $('#scold');
-        var n1 = $shot.clone(true).removeClass('proto');
-        $main.append(n1);
-        n1.css({ top: 237, left: 222 });
-
-        var n2 = $shot.clone(true).removeClass('proto');
-        $main.append(n2);
-        n2.css({ top: 371, left: 481 });
-
-        var n3 = $shot.clone(true).removeClass('proto');
-        $main.append(n3);
-        n3.css({ top: 316, left: 169 });
-
-        var n4 = $scold.clone(true).removeClass('proto');
-        $main.append(n4);
-        n4.css({ top: 560, left: 201 });
-    })();
+    // アイコンの中央に位置をずらす
+    var sicon_width = $shot.width();
+    var sicon_height = $shot.height();
+    function adjustSmallIconCenter(pos) {
+        return {top: pos.top - sicon_height / 2, left: pos.left - sicon_width / 2};
+    }
 
     // GUIの状態を表す変数
     var INIT = 0,
@@ -40,17 +35,23 @@ $(function () {
     var guiState = INIT;
 
     var $hotIcon = $('#hot');
-    var $main = $('#main');
     var offset = $main.offset();
+
+    // マウスの座標を求める
     function getPos(pageX, pageY) {
-        var x = pageX - offset.left - 35 + 100;
-        var y = pageY - offset.top - 35;
+        var x = pageX - offset.left;
+        var y = pageY - offset.top;
         return {top: y, left: x};
     }
+    // アイコンの中心に位置をずらす
+    function adjustIconCenter(pos) {
+        return {top: pos.top - 35, left: pos.left - 35};
+    }
 
+    // アイコンをマウスに追従させる
     $(document).on('mousemove.move', function (ev) {
         if (guiState == GRAB) {
-            $hotIcon.css(getPos(ev.pageX, ev.pageY));
+            $hotIcon.css(adjustIconCenter(getPos(ev.pageX, ev.pageY)));
         }
     });
 
@@ -60,12 +61,15 @@ $(function () {
         } else if (guiState == GRAB) {
             // アイコンを置いた
             var pos = getPos(ev.pageX, ev.pageY);
-            socket.emit('set icon', {
+            var record = {
                 uid: uid,
                 roomId: roomId,
+                icon: 'hot',
                 x: pos.left,
                 y: pos.top
-            });
+            };
+            console.log('set icon (x = ' + pos.left + ', y = ' + pos.top + ')');
+            socket.emit('set icon', record);
             guiState = PUT;
         } else if (guiState == PUT) {
             // アイコンを拾った

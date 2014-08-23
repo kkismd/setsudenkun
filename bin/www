@@ -10,36 +10,30 @@ var server = app.listen(app.get('port'), function() {
   debug('Express server listening on port ' + server.address().port);
 });
 
-var mongodb = require('mongodb');
-var Server = mongodb.Server;
-var Db = mongodb.Db;
+var pmongo = require('promised-mongo');
+var db = pmongo('setsudenkun', ['icons']);
 
-var db = new Db('setudankun', new Server('localhost', 27017), {safe: false});
-db.open(function (err, db) {
-    if (err) debug(err);
-    var collection = db.collection('icons');
-    var cursor = collection.find();
-    cursor.nextObject(function (err, item) {
-        if (!err) {
-            debug('hoge...');
-            debug(item);
-            debug('uid: ' + item.uid);
-            debug('roomId: ' + item.roomId);
-            debug('x: ' + item.x);
-            debug('y: ' + item.y);
-        } else {
-            debug(err);
-        }
-    });
-    db.close();
+db.icons.find().toArray().then(function (docs) {
+    console.log('SUCESS!');
+    console.log(docs);
+}, function (err) {
+    console.log('FAILURE!');
+    console.log(err);
 });
 
 var Session = require('express-session').Session;
 var io = require('socket.io')(server);
 io.on('connection', function (socket) {
-    var cookie = require('cookie').parse(socket.request.headers.cookie);
-    cookie = require('cookie-parser/lib/parse').signedCookies(cookie, SECRET);
-    var sessId = socket.sessionId = cookie[SID_KEY];
+    var sessId, cookie = socket.request.headers.cookie;
+    console.log('io on connection: cookie contents is... ' + cookie);
+    if (cookie) {
+        cookie = require('cookie').parse(cookie);
+        cookie = require('cookie-parser/lib/parse').signedCookies(cookie, SECRET);
+        sessId = socket.sessionId = cookie[SID_KEY];
+    } else {
+        sessId = "";
+    }
+
     app.sessionStore.get(sessId, function (err, sessionData) {
         if (!err) {
             socket.session = new Session({sessionID: sessId, sessionStore: app.sessionStore}, sessionData);
@@ -48,37 +42,39 @@ io.on('connection', function (socket) {
         } else {
             debug(err);
         }
-        socket.emit('hello', {uid: sessId, roomId: socket.session.roomId});
-        debug('socket hello emitted...');
-        db.open(function (err, db1) {
-            debug('db opened...');
-            if (err) { return debug("open error: " + err); }
-            var collection = db1.collection('icons');
-            collection.find().toArray(function (err, array) {
-                if (!err) {
-                    debug('in mongodb find...')
-                    debug(array.length);
-                } else {
-                    debug(err);
-                }
-            });
-            db1.close();
+        var uid = digestMd5(sessId);
+        var roomId = socket.session.roomId;
+        // 一時間以内に作られたアイコン
+        var conditions = {
+            roomId: roomId,
+            timestamp: {"$gte": getOneHourAgo()}
+        };
+        db.icons.find(conditions).toArray().then(function(docs){
+            console.log("fetch data from db..." + docs);
+            socket.emit('hello', {uid: uid, roomId: roomId, members: docs});
+        }, function (e) {
+            console.log('failure.');
+            console.log(e);
         });
     });
 
     socket.on('set icon', function (data) {
         console.log('receive: set icon...');
-        console.log(data);
-
         data._id = data.uid;
-        db.open(function (err, db1) {
-            var collection = db.collection('icons');
-            collection.save(data, function (err, result) {
-                if (err) {
-                    debug(err);
-                }
-            });
-            db.close();
-        });
+        data.timestamp = new Date().toISOString();
+        console.log(data);
+        db.icons.save(data);
     });
 });
+
+// MD5ハッシュの計算
+var crypto = require('crypto');
+function digestMd5(str) {
+    var s = crypto.pseudoRandomBytes(16).toString('hex');
+    return crypto.createHash('md5').update(str || s).digest('hex');
+}
+// 一時間前を求める
+var moment = require('moment');
+function getOneHourAgo() {
+    return moment().subtract(1, 'hours').toISOString();
+}
