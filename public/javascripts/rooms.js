@@ -11,10 +11,25 @@ $(function () {
     var $hotIcon  = $('#hot'),
         $coldIcon = $('#cold'),
         $main     = $('#main'),
+        $box      = $('#box'),
+        $floor    = $('#floor'),
         $shot     = $('#shot'),
         $scold    = $('#scold'),
         iconImg   = { hot: $shot, cold: $scold };
 
+    // アイコンの初期配置
+    var offset = $main.offset(),
+        hotIconOrigin  = $hotIcon.position(),
+        coldIconOrigin = $coldIcon.position();
+
+    // マウスの相対座標を求める
+    function getPos(pageX, pageY) {
+        var x = pageX - offset.left;
+        var y = pageY - offset.top;
+        return {top: y, left: x};
+    }
+
+    // Socket.IO がサーバーに接続した時の初期化
     var uid, roomId, members;
     var socket = io();
     socket.on('hello', function (data) {
@@ -60,14 +75,6 @@ $(function () {
      *  TODO: ColdIconの処理を追加する
      *  TODO: 関係ない場所に置けないようにする
      */
-    var offset = $main.offset();
-
-    // マウスの座標を求める
-    function getPos(pageX, pageY) {
-        var x = pageX - offset.left;
-        var y = pageY - offset.top;
-        return {top: y, left: x};
-    }
     // アイコンの中心に位置をずらす
     function adjustIconCenter(pos) {
         return {top: pos.top - 35, left: pos.left - 35};
@@ -75,34 +82,130 @@ $(function () {
 
     // アイコンをマウスに追従させる
     $(document).on('mousemove.move', function (ev) {
+        var icon;
         if (guiState == GRAB_HOT) {
-            $hotIcon.css(adjustIconCenter(getPos(ev.pageX, ev.pageY)));
+            icon = $hotIcon;
         }
+        else if (guiState == GRAB_COLD) {
+            icon = $coldIcon;
+        }
+        if (icon) icon.css(adjustIconCenter(getPos(ev.pageX, ev.pageY)));
     });
 
-    $hotIcon.on('click', function (ev) {
+    // アイコン上でボタンが押された場合の処理
+    $hotIcon.on('click', iconOnClick);
+    $coldIcon.on('click', iconOnClick);
+
+    // アイコンに関するイベント処理
+    function iconOnClick(ev) {
+        console.log('mouse click: (pageX:'+ev.pageX+', pageY:'+ev.pageY+')');
+        // 対象アイコンによる場合分け
+        var grabState, putState, iconId;
+        if (ev.target.id == 'hot') {
+            grabState = GRAB_HOT;
+            putState = PUT_HOT;
+        }
+        else if (ev.target.id = 'cold') {
+            grabState = GRAB_COLD;
+            putState = PUT_COLD;
+        }
+        else {
+            return;
+        }
+        iconId = ev.target.id;
+
+        // クリックされた場合の状態ごとの処理
+        // 初期状態の場合
         if (guiState == INIT) {
-            guiState = GRAB_HOT;
-        } else if (guiState == GRAB_HOT) {
-            // アイコンを置いた
-            var pos = getPos(ev.pageX, ev.pageY);
-            var record = {
-                uid: uid,
-                roomId: roomId,
-                icon: 'hot',
-                x: pos.left,
-                y: pos.top
-            };
-            console.log('set icon (x = ' + pos.left + ', y = ' + pos.top + ')');
-            socket.emit('set icon', record);
-            guiState = PUT_HOT;
-        } else if (guiState == PUT_HOT) {
-            // アイコンを拾った
+            guiState = grabState;
+        }
+        // アイコンを持っていた場合
+        else if (guiState == grabState) {
+            // クリックした場所が間取り図の上なら
+            if (isMouseOnElem($floor, ev.pageX, ev.pageY)) {
+                console.log('on floor...');
+                // アイコンをフロアに置くという処理
+                var pos = getPos(ev.pageX, ev.pageY);
+                var record = {
+                    uid: uid,
+                    roomId: roomId,
+                    icon: iconId,
+                    x: pos.left,
+                    y: pos.top
+                };
+                console.log('set icon (x = ' + pos.left + ', y = ' + pos.top + ')');
+                socket.emit('set icon', record);
+                guiState = putState;
+            }
+            else if (isMouseOnElem($box, ev.pageX, ev.pageY)) {
+                // アイコンをボックスに戻すという処理
+                if (isLeftSideOnBox(pageX, pageY) && iconId == 'hot') {
+                    $hotIcon.css(hotIconOrigin);
+                }
+                else if (isRightSideOnBox(pageX, pageY) && iconId == 'cold') {
+                    $coldIcon.css(coldIconOrigin);
+                }
+                guiState = INIT;
+            }
+        }
+        // アイコンを置いていた場合
+        else if (guiState == putState) {
+            // アイコンを拾ったことを送信
             socket.emit('remove icon', {
                 uid: uid,
                 roomId: roomId
             });
-            guiState = GRAB_HOT;
+            guiState = grabState;
         }
-    });
+    }
+
+    // マウスの位置がエレメントにかかっているか？
+    // TODO: Bugっているので直す
+    function isMouseOnElem($elem, pageX, pageY) {
+        var x = pageX - offset.left,
+            y = pageY - offset.top,
+            pos = $elem.position();
+        return rectangleContains(pos.top, pos.left, $elem.width(), $elem.height(), x, y);
+    }
+
+    // マウスの位置がボックスの左側か？
+    function isLeftSideOnBox(pageX, pageY) {
+        // ボックスにかかっていなければ偽
+        if (! isMouseOnElem($box, pageX, pageY)) {
+            return false
+        }
+        return rectangleContains($box.top, $box.left, $box.width/2, $box.height, pageX, pageY);
+    }
+
+    // マウスの位置がボックスの右側か？
+    function isRightSideOnBox(pageX, pageY) {
+        // ボックスにかかっていなければ偽
+        if (! isMouseOnElem($box, pageX, pageY)) {
+            return false
+        }
+        var width = $box.width / 2,
+            left = $box.left + width;
+        return rectangleContains($box.top, left, width, $box.height, pageX, pageY);
+    }
+
+    // 点(x,y)が矩形(top,left,width,height)の上にあるかどうかを判定
+    function rectangleContains(top, left, width, height, x, y) {
+        console.log('rectangleContains(top:'+top+', left:'+left+', width:'+width+', height:'+height+', x:'+x+', y:'+y+')');
+        if (top > y) return false;
+        if (top + height < y) return false;
+        if (left > x) return false;
+        if (left + width < x) return false;
+
+        console.log('.... -> true!');
+        // 内側にある
+        return true
+    }
+
+    // position {top, left} 同士の引き算
+    function subPosition(posA, posB) {
+        return {
+            top: posA.top + posB.top,
+            left: posA.left + posB.left
+        };
+    }
 });
