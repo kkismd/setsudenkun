@@ -71,9 +71,7 @@ $(function () {
 
     /**
      *  画面上のイベント処理
-     *  TODO: ボックスに戻したときの処理を実装する
-     *  TODO: ColdIconの処理を追加する
-     *  TODO: 関係ない場所に置けないようにする
+     *  TODO: 置けないときにマウスポインタを(/)にする
      */
     // アイコンの中心に位置をずらす
     function adjustIconCenter(pos) {
@@ -121,28 +119,28 @@ $(function () {
         }
         // アイコンを持っていた場合
         else if (guiState == grabState) {
+            var mousePos = getPos(ev.pageX, ev.pageY);
             // クリックした場所が間取り図の上なら
-            if (isMouseOnElem($floor, ev.pageX, ev.pageY)) {
+            if (isMouseOnElem($floor, mousePos.left, mousePos.top)) {
                 console.log('on floor...');
                 // アイコンをフロアに置くという処理
-                var pos = getPos(ev.pageX, ev.pageY);
                 var record = {
                     uid: uid,
                     roomId: roomId,
                     icon: iconId,
-                    x: pos.left,
-                    y: pos.top
+                    x: mousePos.left,
+                    y: mousePos.top
                 };
-                console.log('set icon (x = ' + pos.left + ', y = ' + pos.top + ')');
+                console.log('set icon (x = ' + mousePos.left + ', y = ' + mousePos.top + ')');
                 socket.emit('set icon', record);
                 guiState = putState;
             }
-            else if (isMouseOnElem($box, ev.pageX, ev.pageY)) {
+            else if (isMouseOnElem($box, mousePos.left, mousePos.top)) {
                 // アイコンをボックスに戻すという処理
-                if (isLeftSideOnBox(pageX, pageY) && iconId == 'hot') {
+                if (isLeftSideOnBox(mousePos.left, mousePos.top) && iconId == 'hot') {
                     $hotIcon.css(hotIconOrigin);
                 }
-                else if (isRightSideOnBox(pageX, pageY) && iconId == 'cold') {
+                else if (isRightSideOnBox(mousePos.left, mousePos.top) && iconId == 'cold') {
                     $coldIcon.css(coldIconOrigin);
                 }
                 guiState = INIT;
@@ -160,12 +158,9 @@ $(function () {
     }
 
     // マウスの位置がエレメントにかかっているか？
-    // TODO: Bugっているので直す
     function isMouseOnElem($elem, pageX, pageY) {
-        var x = pageX - offset.left,
-            y = pageY - offset.top,
-            pos = $elem.position();
-        return rectangleContains(pos.top, pos.left, $elem.width(), $elem.height(), x, y);
+        var pos = $elem.position();
+        return rectangleContains(pos.top, pos.left, $elem.width(), $elem.height(), pageX, pageY);
     }
 
     // マウスの位置がボックスの左側か？
@@ -174,7 +169,8 @@ $(function () {
         if (! isMouseOnElem($box, pageX, pageY)) {
             return false
         }
-        return rectangleContains($box.top, $box.left, $box.width/2, $box.height, pageX, pageY);
+        var pos = $box.position();
+        return rectangleContains(pos.top, pos.left, $box.width()/2, $box.height(), pageX, pageY);
     }
 
     // マウスの位置がボックスの右側か？
@@ -183,18 +179,21 @@ $(function () {
         if (! isMouseOnElem($box, pageX, pageY)) {
             return false
         }
+        var pos = $box.position();
         var width = $box.width / 2,
-            left = $box.left + width;
-        return rectangleContains($box.top, left, width, $box.height, pageX, pageY);
+            left = pos.left + width;
+        return rectangleContains(pos.top, left, width, $box.height, pageX, pageY);
     }
 
     // 点(x,y)が矩形(top,left,width,height)の上にあるかどうかを判定
     function rectangleContains(top, left, width, height, x, y) {
         console.log('rectangleContains(top:'+top+', left:'+left+', width:'+width+', height:'+height+', x:'+x+', y:'+y+')');
-        if (top > y) return false;
-        if (top + height < y) return false;
-        if (left > x) return false;
-        if (left + width < x) return false;
+        if (top > y || left > x ||
+            top + height < y || left + width < x ) {
+
+            console.log('.... -> false!');
+            return false;
+        }
 
         console.log('.... -> true!');
         // 内側にある
