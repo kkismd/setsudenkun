@@ -13,14 +13,6 @@ var server = app.listen(app.get('port'), function() {
 var pmongo = require('promised-mongo');
 var db = pmongo('setsudenkun', ['icons']);
 
-db.icons.find().toArray().then(function (docs) {
-    console.log('SUCESS!');
-    console.log(docs);
-}, function (err) {
-    console.log('FAILURE!');
-    console.log(err);
-});
-
 var Session = require('express-session').Session;
 var io = require('socket.io')(server);
 io.on('connection', function (socket) {
@@ -61,7 +53,7 @@ io.on('connection', function (socket) {
     socket.on('set icon', function (data) {
         console.log('receive: set icon...');
         data._id = data.uid;
-        data.timestamp = new Date().toISOString();
+        data.timestamp = new Date();
         console.log(data);
         db.icons.save(data);
     });
@@ -76,5 +68,5 @@ function digestMd5(str) {
 // 一時間前を求める
 var moment = require('moment');
 function getOneHourAgo() {
-    return moment().subtract(1, 'hours').toISOString();
+    return moment().subtract(1, 'hours').toDate();
 }
