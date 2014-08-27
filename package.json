@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
-    "db": "mongod --config /usr/local/etc/mongod.conf"
+    "db": "mongod --config /usr/local/etc/mongod.conf",
+    "migrate": "mongo localhost/setsudenkun --quiet bin/migrate.js"
   },
   "dependencies": {
     "express": "~4.2.0",
