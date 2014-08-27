@@ -57,6 +57,18 @@ io.on('connection', function (socket) {
         console.log(data);
         db.icons.save(data);
     });
+
+    socket.on('unset icon', function (data) {
+        console.log('receive: unset icon...');
+        data._id = data.uid;
+        console.log(data);
+        var conditions = {
+                _id: data._id,
+                roomId: data.roomId
+            },
+            justOne = true;
+        db.icons.remove(conditions, justOne);
+    });
 });
 
 // MD5ハッシュの計算

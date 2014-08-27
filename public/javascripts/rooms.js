@@ -143,6 +143,7 @@ $(function () {
                 else if (isRightSideOnBox(mousePos.left, mousePos.top) && iconId == 'cold') {
                     $coldIcon.css(coldIconOrigin);
                 }
+                socket.emit('unset icon', {uid: uid, roomId: roomId});
                 guiState = INIT;
             }
         }
