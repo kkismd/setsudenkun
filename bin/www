@@ -56,6 +56,7 @@ io.on('connection', function (socket) {
         data.timestamp = new Date();
         console.log(data);
         db.icons.save(data);
+        io.sockets.emit('set icon', data);
     });
 
     socket.on('unset icon', function (data) {
@@ -68,6 +69,7 @@ io.on('connection', function (socket) {
             },
             justOne = true;
         db.icons.remove(conditions, justOne);
+        io.sockets.emit('unset icon', data);
     });
 });
 

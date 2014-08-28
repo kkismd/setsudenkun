@@ -15,7 +15,11 @@ $(function () {
         $floor    = $('#floor'),
         $shot     = $('#shot'),
         $scold    = $('#scold'),
-        iconImg   = { hot: $shot, cold: $scold };
+        iconImg   = { hot: $shot, cold: $scold },
+        icon_width = $hotIcon.width(),
+        icon_height = $hotIcon.height(),
+        sicon_width = $shot.width(),
+        sicon_height = $shot.height();
 
     // アイコンの初期配置
     var offset = $main.offset(),
@@ -29,7 +33,19 @@ $(function () {
         return {top: y, left: x};
     }
 
-    // Socket.IO がサーバーに接続した時の初期化
+    // アイコンの中心に位置をずらす
+    function adjustIconCenter(pos) {
+        return {top: pos.top - icon_height / 2, left: pos.left - icon_width / 2};
+    }
+
+    // 小アイコンの中央に位置をずらす
+    function adjustSmallIconCenter(pos) {
+        return {top: pos.top - sicon_height / 2, left: pos.left - sicon_width / 2};
+    }
+
+    /**
+     * Socket.IO がサーバーに接続した時の初期化
+     */
     var uid, roomId, members;
     var socket = io();
     socket.on('hello', function (data) {
@@ -62,22 +78,44 @@ $(function () {
             }
         });
     });
-    // アイコンの中央に位置をずらす
-    var sicon_width = $shot.width();
-    var sicon_height = $shot.height();
-    function adjustSmallIconCenter(pos) {
-        return {top: pos.top - sicon_height / 2, left: pos.left - sicon_width / 2};
-    }
+
+    /**
+     * サーバーからの受信処理
+     */
+    socket.on('set icon', function (data) {
+        console.log('receive: set icon...');
+        console.log(data);
+        if ( !(data.uid && data.roomId && data.x && data.y && data.icon) ) { return; } // 情報が不完全ならばなにもしない
+        if (data.uid == uid) { return; } // 自分のものはなにもしない
+        if (data.roomId != roomId) { return; } // 別の部屋はなにもしない
+
+        var pos = {top: data.y, left: data.x};
+        var $icon = $('#' + data.uid);
+        if ($icon) {
+            // 既に画面上にある場合
+            $icon.css(adjustSmallIconCenter(pos));
+        }
+        else {
+            // 新しく作る場合
+            var img = iconImg[data.icon].clone(true).removeClass('proto').attr('id', data.uid);
+            $main.append(img);
+            img.css(adjustSmallIconCenter(pos));
+        }
+    });
+
+    socket.on('unset icon', function (data) {
+        console.log('receive: unset icon...');
+        console.log(data);
+        if (! (data.uid && data.roomId) ) { return; }
+        if (data.uid == uid) { return; }
+
+        var $icon = $('#' + data.uid);
+        if ($icon) { $icon.remove(); }
+    });
 
     /**
      *  画面上のイベント処理
-     *  TODO: 置けないときにマウスポインタを(/)にする
      */
-    // アイコンの中心に位置をずらす
-    function adjustIconCenter(pos) {
-        return {top: pos.top - 35, left: pos.left - 35};
-    }
-
     // アイコンをマウスに追従させる
     $(document).on('mousemove.move', function (ev) {
         var icon;
@@ -116,6 +154,7 @@ $(function () {
         // 初期状態の場合
         if (guiState == INIT) {
             guiState = grabState;
+            startDroppable();
         }
         // アイコンを持っていた場合
         else if (guiState == grabState) {
@@ -134,6 +173,7 @@ $(function () {
                 console.log('set icon (x = ' + mousePos.left + ', y = ' + mousePos.top + ')');
                 socket.emit('set icon', record);
                 guiState = putState;
+                stopDroppable();
             }
             else if (isMouseOnElem($box, mousePos.left, mousePos.top)) {
                 // アイコンをボックスに戻すという処理
@@ -145,6 +185,7 @@ $(function () {
                 }
                 socket.emit('unset icon', {uid: uid, roomId: roomId});
                 guiState = INIT;
+                stopDroppable();
             }
         }
         // アイコンを置いていた場合
@@ -155,6 +196,7 @@ $(function () {
                 roomId: roomId
             });
             guiState = grabState;
+            startDroppable();
         }
     }
 
@@ -181,9 +223,9 @@ $(function () {
             return false
         }
         var pos = $box.position();
-        var width = $box.width / 2,
+        var width = $box.width() / 2,
             left = pos.left + width;
-        return rectangleContains(pos.top, left, width, $box.height, pageX, pageY);
+        return rectangleContains(pos.top, left, width, $box.height(), pageX, pageY);
     }
 
     // 点(x,y)が矩形(top,left,width,height)の上にあるかどうかを判定
@@ -207,5 +249,17 @@ $(function () {
             top: posA.top + posB.top,
             left: posA.left + posB.left
         };
+    }
+
+    function startDroppable() {
+        $(document.body).addClass('undroppable');
+        $box.addClass('droppable');
+        $floor.addClass('droppable');
+    }
+
+    function stopDroppable() {
+        $(document.body).removeClass('undroppable');
+        $box.removeClass('droppable');
+        $floor.removeClass('droppable');
     }
 });

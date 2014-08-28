@@ -1,11 +1,21 @@
 .proto {
     display: none;
 }
+
 div#main {
     position: absolute;
     width: 600px;
     border: solid 1px black;
 }
+
+.droppable {
+    border: solid 1px deepskyblue;
+}
+
+.undroppable {
+    background-color: darkgray;
+}
+
 img.gui {
     position: absolute;
     z-index: 1;
