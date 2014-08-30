@@ -1,0 +1,11 @@
+extends layout
+
+block header
+
+block content
+    h1 Room List
+    ul
+        for room in rooms
+            li
+                a(href="rooms/#{room.roomId}")
+                    span= room.name

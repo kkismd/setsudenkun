@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-var debug = require('debug')('setsudenkun2');
-var app = require('../app');
+var debug = require('debug')('setsudenkun2'),
+    app = require('../app'),
+    db = require('../db');
+
 var SECRET = "9D97EF29-CDDD-4081-B3E3-E9AE8D63930D";
 var SID_KEY = 'connect.sid';
 
@@ -10,8 +12,6 @@ var server = app.listen(app.get('port'), function() {
   debug('Express server listening on port ' + server.address().port);
 });
 
-var pmongo = require('promised-mongo');
-var db = pmongo('setsudenkun', ['icons']);
 
 var Session = require('express-session').Session;
 var io = require('socket.io')(server);

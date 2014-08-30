@@ -18,7 +18,9 @@ app.sessionStore = new MongoStore({
 app.use(session({
     secret: "9D97EF29-CDDD-4081-B3E3-E9AE8D63930D",
     store: app.sessionStore,
-    maxAge: 1000*60*60*24*360*10, // 十年間有効
+    cookie: {
+        maxAge: 1000*60*60*24*360*10 // 十年間有効
+    },
     resave: true,
     saveUninitialized: true
 }));
