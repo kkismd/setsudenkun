@@ -1,0 +1,26 @@
+extends ../layout
+
+block header
+
+block content
+    table
+        form(method="post", action="")
+        tr
+            td id
+            td
+                input(type="text", value="#{room.roomId}")
+
+        tr
+            td name
+            td
+                input(type="text", value="#{room.name}")
+
+        tr
+            td url
+            td
+                input(type="text", value="#{room.url}")
+
+        tr
+            td(colspan=2)
+                input(type="submit", value="save")
+                button(onclick="history.back()") cancel
