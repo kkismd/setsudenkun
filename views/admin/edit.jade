@@ -3,24 +3,25 @@ extends ../layout
 block header
 
 block content
-    table
-        form(method="post", action="")
-        tr
-            td id
-            td
-                input(type="text", value="#{room.roomId}")
+    form(method="post")
+        table
+            tr
+                td roomId
+                td
+                    span= room.roomId
+                    input(type="hidden", name="room[roomId]", value="#{room.roomId}")
 
-        tr
-            td name
-            td
-                input(type="text", value="#{room.name}")
+            tr
+                td name
+                td
+                    input(type="text", name="room[name]", value="#{room.name}")
 
-        tr
-            td url
-            td
-                input(type="text", value="#{room.url}")
+            tr
+                td url
+                td
+                    input(type="text", name="room[url]", value="#{room.url}")
 
-        tr
-            td(colspan=2)
-                input(type="submit", value="save")
-                button(onclick="history.back()") cancel
+            tr
+                td(colspan=2)
+                    input(type="submit", value="save")
+                    button(onclick="history.back()") cancel

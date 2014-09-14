@@ -9,5 +9,7 @@ block content
             tr
                 td= room.name
                 td
+                    a(href="#{room.url}") View
+                    span &nbsp;
                     a(href="rooms/edit/#{room.roomId}") Edit
-
+    a(href="./rooms/new") 新規作成
