@@ -95,8 +95,19 @@ router.post('/rooms/new', function (req, res) {
 });
 
 // 削除
-router.post('/rooms/delete/:id', function (req, res) {
-
+router.post('/rooms/del', function (req, res) {
+    var roomId = parseInt(req.body.roomId);
+    console.log('roomId = ' + roomId);
+    db.rooms.remove({roomId: roomId}, {justOne: true}).then(function (result) {
+        console.log('remove() result =');
+        console.log(result);
+        console.log('room removed: roomId = %d', roomId);
+        res.redirect('../rooms');
+    }, function (err) {
+        console.log('remove() failed.');
+        console.log(err);
+        res.send(err);
+    });
 });
 
 // 連番の取得

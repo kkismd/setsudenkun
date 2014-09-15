@@ -25,3 +25,8 @@ block content
                 td(colspan=2)
                     input(type="submit", value="save")
                     button(onclick="history.back()") cancel
+
+    if (room.roomId !== '')
+        form(method="post", action="../del")
+            input(type="hidden", name="roomId", value="#{room.roomId}")
+            input(type="submit", value="delete")
