@@ -23,5 +23,13 @@
     "moment": "2.8.2",
     "jade": "~1.3.0",
     "q": "~1.0.1"
+  },
+  "devDependencies": {
+    "grunt": "~0.4.5",
+    "grunt-browserify": "^3.0.1",
+    "grunt-contrib-jshint": "~0.10.0",
+    "grunt-contrib-nodeunit": "~0.4.1",
+    "grunt-typescript": "~0.3.8",
+    "load-grunt-tasks": "^0.6.0"
   }
 }

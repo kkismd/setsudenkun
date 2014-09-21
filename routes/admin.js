@@ -3,19 +3,19 @@ var util = require('util'),
 var express = require('express'),
     router = express.Router(),
     db = require('../db');
+var endWithSlash = new RegExp('/$');
 
 // 管理画面トップ
 router.get('/', function (req, res) {
-    res.send('hello world.');
+    res.render('admin/index');
 });
-
-var endWithSlash = new RegExp('/$');
 
 // 間取り図一覧
 router.get('/rooms', function (req, res) {
     // パスが / で終わってたら戻す
     if (endWithSlash.test(req.path)) {
         res.redirect('../rooms');
+        return;
     }
     db.rooms.find().toArray().then(function (rooms) {
         res.render('admin/rooms', {rooms: rooms});

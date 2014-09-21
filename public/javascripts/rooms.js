@@ -3,8 +3,8 @@ $(function () {
     var INIT = 0,
         GRAB_HOT  = 1, // (暑)アイコンを持っている
         GRAB_COLD = 2, // (寒)アイコンを持っている
-        PUT_HOT   = 3, // (暑)アイコンを置いている
-        PUT_COLD  = 4; // (寒)アイコンを置いている
+        PUT_HOT   = 3, // (暑)アイコンを場に置いている
+        PUT_COLD  = 4; // (寒)アイコンを場に置いている
     var guiState  = INIT;
 
     // 画面上のエレメント
@@ -133,32 +133,33 @@ $(function () {
     $coldIcon.on('click', iconOnClick);
 
     // アイコンに関するイベント処理
-    function iconOnClick(ev) {
-        console.log('mouse click: (pageX:'+ev.pageX+', pageY:'+ev.pageY+')');
+    function iconOnClick(event) {
+        console.log('mouse click: (pageX:'+event.pageX+', pageY:'+event.pageY+')');
         // 対象アイコンによる場合分け
-        var grabState, putState, iconId;
-        if (ev.target.id == 'hot') {
+        var grabState, putState;
+        if (event.target.id == 'hot') {
             grabState = GRAB_HOT;
             putState = PUT_HOT;
         }
-        else if (ev.target.id = 'cold') {
+        else if (event.target.id = 'cold') {
             grabState = GRAB_COLD;
             putState = PUT_COLD;
         }
         else {
             return;
         }
-        iconId = ev.target.id;
+        var iconId = event.target.id;
 
         // クリックされた場合の状態ごとの処理
         // 初期状態の場合
         if (guiState == INIT) {
             guiState = grabState;
+            floatIcon(event.target);
             startDroppable();
         }
         // アイコンを持っていた場合
         else if (guiState == grabState) {
-            var mousePos = getPos(ev.pageX, ev.pageY);
+            var mousePos = getPos(event.pageX, event.pageY);
             // クリックした場所が間取り図の上なら
             if (isMouseOnElem($floor, mousePos.left, mousePos.top)) {
                 console.log('on floor...');
@@ -173,18 +174,20 @@ $(function () {
                 console.log('set icon (x = ' + mousePos.left + ', y = ' + mousePos.top + ')');
                 socket.emit('set icon', record);
                 guiState = putState;
+                unfloatIcon(event.target);
                 stopDroppable();
             }
             else if (isMouseOnElem($box, mousePos.left, mousePos.top)) {
                 // アイコンをボックスに戻すという処理
-                if (isLeftSideOnBox(mousePos.left, mousePos.top) && iconId == 'hot') {
+                if (iconId == 'hot') {
                     $hotIcon.css(hotIconOrigin);
                 }
-                else if (isRightSideOnBox(mousePos.left, mousePos.top) && iconId == 'cold') {
+                else if (iconId == 'cold') {
                     $coldIcon.css(coldIconOrigin);
                 }
                 socket.emit('unset icon', {uid: uid, roomId: roomId});
                 guiState = INIT;
+                unfloatIcon(event.target);
                 stopDroppable();
             }
         }
@@ -196,6 +199,7 @@ $(function () {
                 roomId: roomId
             });
             guiState = grabState;
+            floatIcon(event.target);
             startDroppable();
         }
     }
@@ -204,28 +208,6 @@ $(function () {
     function isMouseOnElem($elem, pageX, pageY) {
         var pos = $elem.position();
         return rectangleContains(pos.top, pos.left, $elem.width(), $elem.height(), pageX, pageY);
-    }
-
-    // マウスの位置がボックスの左側か？
-    function isLeftSideOnBox(pageX, pageY) {
-        // ボックスにかかっていなければ偽
-        if (! isMouseOnElem($box, pageX, pageY)) {
-            return false
-        }
-        var pos = $box.position();
-        return rectangleContains(pos.top, pos.left, $box.width()/2, $box.height(), pageX, pageY);
-    }
-
-    // マウスの位置がボックスの右側か？
-    function isRightSideOnBox(pageX, pageY) {
-        // ボックスにかかっていなければ偽
-        if (! isMouseOnElem($box, pageX, pageY)) {
-            return false
-        }
-        var pos = $box.position();
-        var width = $box.width() / 2,
-            left = pos.left + width;
-        return rectangleContains(pos.top, left, width, $box.height(), pageX, pageY);
     }
 
     // 点(x,y)が矩形(top,left,width,height)の上にあるかどうかを判定
@@ -243,14 +225,6 @@ $(function () {
         return true
     }
 
-    // position {top, left} 同士の引き算
-    function subPosition(posA, posB) {
-        return {
-            top: posA.top + posB.top,
-            left: posA.left + posB.left
-        };
-    }
-
     function startDroppable() {
         $(document.body).addClass('undroppable');
         $box.addClass('droppable');
@@ -261,5 +235,15 @@ $(function () {
         $(document.body).removeClass('undroppable');
         $box.removeClass('droppable');
         $floor.removeClass('droppable');
+    }
+
+    function floatIcon(icon) {
+        console.log(icon);
+        $(icon).css('zIndex', 2);
+    }
+
+    function unfloatIcon(icon) {
+        console.log(icon);
+        $(icon).css('zIndex', 1);
     }
 });
