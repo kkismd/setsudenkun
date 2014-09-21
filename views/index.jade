@@ -1,5 +1,9 @@
 extends layout
+block header
+    script(type="text/javascript", src="javascripts/jquery-2.1.1.min.js")
+    script(type="text/javascript", src="javascripts/hello.js")
 
 block content
-  h1= title
-  p Welcome to #{title}
+    h1= title
+    p Welcome to #{title}
+    span#btn click me.
