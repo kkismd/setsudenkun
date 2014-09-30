@@ -14,7 +14,7 @@ router.get('/', function (req, res) {
 router.get('/rooms', function (req, res) {
     // パスが / で終わってたら戻す
     if (endWithSlash.test(req.path)) {
-        res.redirect('../rooms');
+        res.redirect('/');
         return;
     }
     db.rooms.find().toArray().then(function (rooms) {
@@ -86,7 +86,7 @@ router.post('/rooms/new', function (req, res) {
         console.log('room data is saved.');
         console.log('result = ');
         console.log(result);
-        res.redirect('../rooms');
+        res.redirect('/');
     }, function (err) {
         console.log('failed.');
         console.log(err);
@@ -102,7 +102,7 @@ router.post('/rooms/del', function (req, res) {
         console.log('remove() result =');
         console.log(result);
         console.log('room removed: roomId = %d', roomId);
-        res.redirect('../rooms');
+        res.redirect('/');
     }, function (err) {
         console.log('remove() failed.');
         console.log(err);

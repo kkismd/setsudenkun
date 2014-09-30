@@ -14,7 +14,7 @@ router.get('/', function(req, res) {
 });
 
 // フロア画面
-router.get('/:id', function(req, res) {
+router.get('/room/:id', function(req, res) {
     // パラメータは数字のみ
     if (!idPattern.test(req.params.id)) {
         notFound(res);
